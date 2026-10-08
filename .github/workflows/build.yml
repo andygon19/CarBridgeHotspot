@@ -20,9 +20,21 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+        continue-on-error: false
+
+      - name: Surface gradle errors
+        if: failure()
+        run: |
+          echo "===== TAIL build.log ====="
+          tail -80 build.log || true
+          ERR=$(grep -iE "FAILURE:|What went wrong|error:|Caused by|> " build.log | head -12 | tr '\n' '§')
+          echo "::error::${ERR}"
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: CarBridgeHotspot-debug-apk
