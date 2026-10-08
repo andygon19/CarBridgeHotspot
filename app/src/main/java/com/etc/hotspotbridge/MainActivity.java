@@ -86,6 +86,17 @@ public class MainActivity extends AppCompatActivity {
         Button stopBtn = findViewById(R.id.stopBtn);
         Button statusBtn = findViewById(R.id.statusBtn);
         Button permsBtn = findViewById(R.id.permsBtn);
+        Button presetDiplayBtn = findViewById(R.id.presetDiplayBtn);
+        Button presetDiautoBtn = findViewById(R.id.presetDiautoBtn);
+
+        presetDiplayBtn.setOnClickListener(v -> {
+            receiverInput.setText(RECEIVER_PRESETS[0]); // com.shihab.diplay
+            appendLog("Receptor seleccionado: DiPlay (" + RECEIVER_PRESETS[0] + ")");
+        });
+        presetDiautoBtn.setOnClickListener(v -> {
+            receiverInput.setText(RECEIVER_PRESETS[1]); // com.andrerinas.headunitrevived
+            appendLog("Receptor seleccionado: DiAuto (" + RECEIVER_PRESETS[1] + ")");
+        });
 
         startHotspotBtn.setOnClickListener(v -> runStartHotspot());
         launchReceiverBtn.setOnClickListener(v -> launchReceiver());

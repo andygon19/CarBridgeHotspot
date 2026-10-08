@@ -169,8 +169,9 @@ public class HotspotController {
             Object ok = setApConfig.invoke(wifiManager, conf);
             log("setWifiApConfiguration devolvio: " + ok);
         } catch (Throwable t) {
-            log("Estrategia 1: setWifiApConfiguration no disponible (" +
-                    t.getClass().getSimpleName() + ").");
+            Throwable c = rootCause(t);
+            log("Estrategia 1: setWifiApConfiguration falló → " +
+                    c.getClass().getSimpleName() + ": " + String.valueOf(c.getMessage()));
             return false;
         }
 
@@ -328,8 +329,19 @@ public class HotspotController {
                     + " | apBand=" + apBand + " (" + apBandLabel(apBand) + ")"
                     + " | apChannel=" + apChannel);
         } catch (Throwable t) {
-            log("No se pudo leer la config AP: " + t.getClass().getSimpleName());
+            Throwable c = rootCause(t);
+            log("No se pudo leer la config AP: " + c.getClass().getSimpleName()
+                    + ": " + String.valueOf(c.getMessage()));
         }
+    }
+
+    /** Desenvuelve InvocationTargetException y similares para ver el error real. */
+    private Throwable rootCause(Throwable t) {
+        Throwable c = t;
+        while (c.getCause() != null && c.getCause() != c) {
+            c = c.getCause();
+        }
+        return c;
     }
 
     // ───────── helpers de reflexion ─────────
