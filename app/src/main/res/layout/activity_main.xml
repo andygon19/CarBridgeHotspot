@@ -142,11 +142,30 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/credView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Red creada: (todavía no)"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:background="#2200AA00"
+            android:padding="10dp"
+            android:paddingTop="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nota: en Android 9 el SSID y la clave los asigna el sistema (no se pueden cambiar). Conecta el iPhone a la red que aparezca arriba."
+            android:textSize="12sp"
+            android:paddingTop="4dp"
+            android:paddingBottom="8dp" />
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Registro"
             android:textStyle="bold"
-            android:paddingTop="16dp" />
+            android:paddingTop="8dp" />
 
         <TextView
             android:id="@+id/logView"

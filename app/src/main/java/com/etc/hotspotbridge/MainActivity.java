@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText channelInput;
     private EditText receiverInput;
     private TextView logView;
+    private TextView credView;
 
     private HotspotController controller;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -64,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         receiverInput = findViewById(R.id.receiverInput);
         logView = findViewById(R.id.logView);
         logView.setMovementMethod(new ScrollingMovementMethod());
+        credView = findViewById(R.id.credView);
 
         ArrayAdapter<String> bandAdapter = new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_dropdown_item,
@@ -117,7 +119,24 @@ public class MainActivity extends AppCompatActivity {
         final String pass = passInput.getText().toString();
         final HotspotController.Band band = selectedBand();
         final int channel = selectedChannel();
-        worker.execute(() -> controller.startHotspot(ssid, pass, band, channel));
+        worker.execute(() -> {
+            boolean ok = controller.startHotspot(ssid, pass, band, channel);
+            updateCreds(ok);
+        });
+    }
+
+    private void updateCreds(boolean ok) {
+        final String s = controller.getActiveSsid();
+        final String p = controller.getActivePass();
+        final String b = controller.getActiveBandLabel();
+        runOnUiThread(() -> {
+            if (ok && s != null) {
+                credView.setText("Red creada ✓\nSSID: " + s + "\nClave: " + p
+                        + "\nBanda: " + b + "\n→ Conecta el iPhone a esta red.");
+            } else {
+                credView.setText("Red creada: (falló, revisa el registro)");
+            }
+        });
     }
 
     private void runStartBoth() {
@@ -127,6 +146,7 @@ public class MainActivity extends AppCompatActivity {
         final int channel = selectedChannel();
         worker.execute(() -> {
             boolean ok = controller.startHotspot(ssid, pass, band, channel);
+            updateCreds(ok);
             controller.reportCurrentApConfig();
             if (ok) {
                 try { Thread.sleep(1500); } catch (InterruptedException ignored) { }

@@ -55,6 +55,19 @@ public class HotspotController {
 
     private WifiManager.LocalOnlyHotspotReservation localOnlyReservation;
 
+    // Credenciales reales de la red creada (LocalOnlyHotspot las genera el sistema).
+    private volatile String activeSsid;
+    private volatile String activePass;
+    private volatile String activeBandLabel;
+
+    public boolean isHotspotActive() {
+        return localOnlyReservation != null;
+    }
+
+    public String getActiveSsid() { return activeSsid; }
+    public String getActivePass() { return activePass; }
+    public String getActiveBandLabel() { return activeBandLabel; }
+
     public HotspotController(Context context, LogSink logSink) {
         this.appContext = context.getApplicationContext();
         this.wifiManager = (WifiManager) appContext.getSystemService(Context.WIFI_SERVICE);
@@ -76,6 +89,15 @@ public class HotspotController {
         if (wifiManager == null) {
             log("ERROR: WifiManager no disponible.");
             return false;
+        }
+
+        // Si ya hay un LocalOnlyHotspot activo, reutilizarlo en vez de fallar
+        // con "Caller already has an active LocalOnlyHotspot request".
+        if (localOnlyReservation != null) {
+            log("Ya hay un hotspot activo; se reutiliza.");
+            log("   Red: SSID=" + activeSsid + "  clave=" + activePass +
+                    "  banda=" + activeBandLabel);
+            return true;
         }
 
         // Para levantar SoftAP normalmente hay que apagar primero el Wi-Fi cliente.
@@ -212,9 +234,13 @@ public class HotspotController {
                     try {
                         WifiConfiguration c = reservation.getWifiConfiguration();
                         if (c != null) {
-                            log("LocalOnlyHotspot activo. SSID=" + c.SSID + " key=" + c.preSharedKey);
+                            activeSsid = c.SSID;
+                            activePass = c.preSharedKey;
                             int apBand = getIntFieldQuietly(c, "apBand", -999);
+                            activeBandLabel = apBandLabel(apBand);
+                            log("LocalOnlyHotspot activo. SSID=" + c.SSID + " key=" + c.preSharedKey);
                             log("Banda reportada (apBand=" + apBand + "): " + apBandLabel(apBand));
+                            log("►► CONECTA EL IPHONE A: " + c.SSID + "  /  clave: " + c.preSharedKey);
                         }
                     } catch (Throwable ignored) { }
                     synchronized (lock) { started[0] = true; lock.notifyAll(); }
@@ -250,6 +276,9 @@ public class HotspotController {
             }
             localOnlyReservation = null;
         }
+        activeSsid = null;
+        activePass = null;
+        activeBandLabel = null;
         // Intento de apagar SoftAP clasico.
         try {
             WifiConfiguration cur = null;
@@ -272,10 +301,20 @@ public class HotspotController {
             stopTethering.invoke(cm, 0 /*TETHERING_WIFI*/);
             log("stopTethering(WIFI) invocado.");
         } catch (Throwable ignored) { }
+        // Reactivar el Wi-Fi cliente que apagamos al iniciar.
+        try {
+            wifiManager.setWifiEnabled(true);
+            log("Wi-Fi cliente reactivado.");
+        } catch (Throwable ignored) { }
     }
 
     /** Lee y reporta la configuracion de AP actual (util para verificar la banda real). */
     public void reportCurrentApConfig() {
+        if (localOnlyReservation != null && activeSsid != null) {
+            log("Red activa (LocalOnlyHotspot) → SSID=" + activeSsid
+                    + " | clave=" + activePass + " | banda=" + activeBandLabel);
+            return;
+        }
         try {
             Method getApConfig = WifiManager.class.getMethod("getWifiApConfiguration");
             WifiConfiguration c = (WifiConfiguration) getApConfig.invoke(wifiManager);
