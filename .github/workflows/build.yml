@@ -29,9 +29,11 @@ jobs:
         if: failure()
         run: |
           echo "===== TAIL build.log ====="
-          tail -80 build.log || true
-          ERR=$(grep -iE "FAILURE:|What went wrong|error:|Caused by|> " build.log | head -12 | tr '\n' '§')
-          echo "::error::${ERR}"
+          tail -120 build.log || true
+          ERR=$(grep -vE "^> Task |UP-TO-DATE|NO-SOURCE" build.log \
+                | grep -iE "FAILURE|What went wrong|error:|Caused by|AAPT|resource|Execution failed|not found|cannot|Unresolved" \
+                | tail -25 | tr '\n' '§')
+          echo "::error::ERR→ ${ERR}"
 
       - name: Upload APK
         if: success()
