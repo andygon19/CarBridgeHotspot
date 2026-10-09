@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText receiverInput;
     private TextView logView;
     private TextView credView;
+    private android.widget.ImageView qrView;
 
     private HotspotController controller;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -66,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         logView = findViewById(R.id.logView);
         logView.setMovementMethod(new ScrollingMovementMethod());
         credView = findViewById(R.id.credView);
+        qrView = findViewById(R.id.qrView);
 
         ArrayAdapter<String> bandAdapter = new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_dropdown_item,
@@ -171,11 +173,51 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             if (ok && s != null) {
                 credView.setText("Red creada ✓\nSSID: " + s + "\nClave: " + p
-                        + "\nBanda: " + b + "\n→ Conecta el iPhone a esta red.");
+                        + "\nBanda: " + b + "\n→ Escanea el QR o conéctate a esta red.");
             } else {
                 credView.setText("Red creada: (falló, revisa el registro)");
             }
         });
+        // Mostrar QR solo cuando hay credenciales reales (modo LocalOnlyHotspot).
+        if (ok && s != null && p != null && !s.startsWith("(")) {
+            showWifiQr(s, p);
+        } else {
+            runOnUiThread(() -> qrView.setVisibility(android.view.View.GONE));
+        }
+    }
+
+    /** Genera y muestra un QR estándar de Wi-Fi para unir el iPhone/Android con un escaneo. */
+    private void showWifiQr(String ssid, String pass) {
+        try {
+            String payload = "WIFI:T:WPA;S:" + wifiEscape(ssid) + ";P:" + wifiEscape(pass) + ";;";
+            int size = 520;
+            com.google.zxing.common.BitMatrix m = new com.google.zxing.MultiFormatWriter()
+                    .encode(payload, com.google.zxing.BarcodeFormat.QR_CODE, size, size);
+            android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(
+                    size, size, android.graphics.Bitmap.Config.RGB_565);
+            for (int x = 0; x < size; x++) {
+                for (int y = 0; y < size; y++) {
+                    bmp.setPixel(x, y, m.get(x, y)
+                            ? android.graphics.Color.BLACK : android.graphics.Color.WHITE);
+                }
+            }
+            runOnUiThread(() -> {
+                qrView.setImageBitmap(bmp);
+                qrView.setVisibility(android.view.View.VISIBLE);
+            });
+        } catch (Throwable t) {
+            appendLog("No se pudo generar el QR: " + t.getClass().getSimpleName());
+        }
+    }
+
+    /** Escapa los caracteres especiales del formato WIFI: \ ; , : " */
+    private String wifiEscape(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\")
+                .replace(";", "\\;")
+                .replace(",", "\\,")
+                .replace(":", "\\:")
+                .replace("\"", "\\\"");
     }
 
     private void runStartBoth() {

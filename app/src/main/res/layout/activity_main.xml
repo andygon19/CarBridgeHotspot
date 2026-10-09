@@ -209,7 +209,25 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Nota: en Android 9 el SSID y la clave los asigna el sistema (no se pueden cambiar). Conecta el iPhone a la red que aparezca arriba."
+            android:text="Escanea este QR con la CÁMARA del iPhone para unirte a la red sin escribir nada:"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:paddingTop="8dp" />
+
+        <ImageView
+            android:id="@+id/qrView"
+            android:layout_width="280dp"
+            android:layout_height="280dp"
+            android:layout_gravity="center_horizontal"
+            android:background="#FFFFFFFF"
+            android:padding="8dp"
+            android:visibility="gone"
+            android:contentDescription="QR de la red Wi-Fi" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nota: en Android 9 el SSID y la clave los asigna el sistema (cambian en cada arranque y no se pueden fijar). El QR evita tener que escribirlos."
             android:textSize="12sp"
             android:paddingTop="4dp"
             android:paddingBottom="8dp" />

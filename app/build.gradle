@@ -34,4 +34,7 @@ dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.core:core:1.12.0'
+
+    // Generador de código QR (para unir el teléfono a la red con un escaneo).
+    implementation 'com.google.zxing:core:3.5.2'
 }
