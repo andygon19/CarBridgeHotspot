@@ -60,6 +60,11 @@ public class HotspotController {
     private volatile String activePass;
     private volatile String activeBandLabel;
 
+    // Si true, no se crea LocalOnlyHotspot (SSID aleatorio); se usa el hotspot
+    // del sistema (tethering), cuyo SSID/clave configura el usuario en Ajustes y es FIJO.
+    private volatile boolean preferSystemHotspot = false;
+    public void setPreferSystemHotspot(boolean v) { preferSystemHotspot = v; }
+
     public boolean isHotspotActive() {
         return localOnlyReservation != null;
     }
@@ -98,6 +103,24 @@ public class HotspotController {
             log("   Red: SSID=" + activeSsid + "  clave=" + activePass +
                     "  banda=" + activeBandLabel);
             return true;
+        }
+
+        // MODO SSID FIJO: usar el hotspot del sistema (configurado en Ajustes).
+        if (preferSystemHotspot) {
+            log("Modo hotspot del sistema (SSID/clave FIJOS, los de Ajustes).");
+            if (apInterfacePresent()) {
+                log("AP del sistema ya activo. Se usa esa red.");
+                setSystemCredsLabels();
+                return true;
+            }
+            if (startSystemTethering()) {
+                log("Hotspot del sistema iniciado. SSID/clave = los de Ajustes → Hotspot.");
+                setSystemCredsLabels();
+                return true;
+            }
+            log("No se pudo encender el hotspot del sistema.");
+            log("→ Pulsa 'Ajustes de hotspot', define SSID/clave y enciéndelo; o desmarca la casilla.");
+            return false;
         }
 
         // Para levantar SoftAP normalmente hay que apagar primero el Wi-Fi cliente.
@@ -307,6 +330,69 @@ public class HotspotController {
             wifiManager.setWifiEnabled(true);
             log("Wi-Fi cliente reactivado.");
         } catch (Throwable ignored) { }
+    }
+
+    private void setSystemCredsLabels() {
+        activeSsid = "(el de Ajustes del sistema)";
+        activePass = "(el de Ajustes del sistema)";
+        activeBandLabel = "según Ajustes";
+    }
+
+    /** ¿Hay una interfaz de AP (softap) levantada ahora mismo? */
+    private boolean apInterfacePresent() {
+        try {
+            java.util.Enumeration<NetworkInterface> ifs = NetworkInterface.getNetworkInterfaces();
+            if (ifs == null) return false;
+            for (NetworkInterface ni : java.util.Collections.list(ifs)) {
+                String n = ni.getName();
+                if (n == null) continue;
+                boolean looksAp = n.startsWith("ap") || n.toLowerCase().contains("softap")
+                        || n.equals("wlan1");
+                if (looksAp && ni.isUp() && ni.getInetAddresses().hasMoreElements()) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) { }
+        return false;
+    }
+
+    /** Enciende el hotspot del sistema (tethering Wi-Fi) usando la config guardada en Ajustes. */
+    private boolean startSystemTethering() {
+        // Liberar la radio (una sola radio: no puede ser cliente y AP a la vez).
+        try {
+            if (wifiManager.isWifiEnabled()) {
+                wifiManager.setWifiEnabled(false);
+                sleep(1200);
+            }
+        } catch (Throwable ignored) { }
+        try {
+            ConnectivityManager cm = (ConnectivityManager)
+                    appContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            Class<?> callbackClass = Class.forName(
+                    "android.net.ConnectivityManager$OnStartTetheringCallback");
+            Object callbackProxy = java.lang.reflect.Proxy.newProxyInstance(
+                    callbackClass.getClassLoader(),
+                    new Class<?>[]{callbackClass},
+                    (proxy, method, args) -> {
+                        log("startTethering callback: " + method.getName());
+                        return null;
+                    });
+            Method startTethering = ConnectivityManager.class.getMethod(
+                    "startTethering", int.class, boolean.class, callbackClass);
+            startTethering.invoke(cm, 0 /*TETHERING_WIFI*/, false, callbackProxy);
+            log("startTethering(WIFI) del sistema invocado.");
+        } catch (Throwable t) {
+            Throwable c = rootCause(t);
+            log("startTethering falló → " + c.getClass().getSimpleName()
+                    + ": " + String.valueOf(c.getMessage()));
+            return false;
+        }
+        // Esperar a que aparezca la interfaz del AP.
+        for (int i = 0; i < 12; i++) {
+            if (apInterfacePresent()) return true;
+            sleep(500);
+        }
+        return apInterfacePresent();
     }
 
     /** Lee y reporta la configuracion de AP actual (util para verificar la banda real). */

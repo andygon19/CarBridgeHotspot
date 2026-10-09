@@ -18,6 +18,39 @@
             android:textStyle="bold"
             android:paddingBottom="12dp" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/modeCarplayBtn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="▶ CarPlay (iPhone)" />
+
+            <Button
+                android:id="@+id/modeAndroidautoBtn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="▶ Android Auto" />
+        </LinearLayout>
+
+        <CheckBox
+            android:id="@+id/systemHotspotCheck"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Hotspot del sistema (SSID y clave FIJOS, configurados en Ajustes)"
+            android:paddingTop="6dp" />
+
+        <Button
+            android:id="@+id/openHotspotSettingsBtn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Abrir Ajustes de hotspot del sistema" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -194,7 +227,7 @@
             android:layout_height="360dp"
             android:background="#11000000"
             android:fontFamily="monospace"
-            android:textSize="16sp"
+            android:textSize="20sp"
             android:padding="10dp"
             android:scrollbars="vertical" />
 

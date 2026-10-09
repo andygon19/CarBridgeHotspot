@@ -98,6 +98,34 @@ public class MainActivity extends AppCompatActivity {
             appendLog("Receptor seleccionado: DiAuto (" + RECEIVER_PRESETS[1] + ")");
         });
 
+        // Casilla: usar el hotspot del sistema (SSID fijo).
+        android.widget.CheckBox systemHotspotCheck = findViewById(R.id.systemHotspotCheck);
+        systemHotspotCheck.setOnCheckedChangeListener((btn, checked) -> {
+            controller.setPreferSystemHotspot(checked);
+            appendLog(checked
+                    ? "Modo SSID FIJO activado: usa el hotspot configurado en Ajustes."
+                    : "Modo automático: LocalOnlyHotspot (SSID aleatorio del sistema).");
+        });
+
+        // Abrir la pantalla de Ajustes de hotspot del sistema.
+        Button openHotspotSettingsBtn = findViewById(R.id.openHotspotSettingsBtn);
+        openHotspotSettingsBtn.setOnClickListener(v -> openHotspotSettings());
+
+        // Botones de modo completo.
+        Button modeCarplayBtn = findViewById(R.id.modeCarplayBtn);
+        Button modeAndroidautoBtn = findViewById(R.id.modeAndroidautoBtn);
+        modeCarplayBtn.setOnClickListener(v -> {
+            receiverInput.setText(RECEIVER_PRESETS[0]); // DiPlay
+            appendLog("== Modo CarPlay (iPhone) ==");
+            runStartBoth();
+        });
+        modeAndroidautoBtn.setOnClickListener(v -> {
+            receiverInput.setText(RECEIVER_PRESETS[1]); // DiAuto
+            appendLog("== Modo Android Auto ==");
+            appendLog("Si es inalámbrico: en el teléfono Android desactiva 'Cambiar entre redes' / 'Aceleración de red' en Ajustes de Wi-Fi.");
+            runStartBoth();
+        });
+
         startHotspotBtn.setOnClickListener(v -> runStartHotspot());
         launchReceiverBtn.setOnClickListener(v -> launchReceiver());
         startBothBtn.setOnClickListener(v -> runStartBoth());
@@ -184,6 +212,26 @@ public class MainActivity extends AppCompatActivity {
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(launch);
         appendLog("Lanzado receptor: " + pkg);
+    }
+
+    private void openHotspotSettings() {
+        // Intenta abrir la pantalla de tethering/hotspot del sistema.
+        Intent[] tries = new Intent[] {
+                new Intent().setClassName("com.android.settings",
+                        "com.android.settings.TetherSettings"),
+                new Intent().setClassName("com.android.settings",
+                        "com.android.settings.Settings$TetherSettingsActivity"),
+                new Intent(Settings.ACTION_WIRELESS_SETTINGS)
+        };
+        for (Intent i : tries) {
+            try {
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+                appendLog("Abriendo Ajustes de hotspot… define SSID/clave y enciéndelo.");
+                return;
+            } catch (Exception ignored) { }
+        }
+        appendLog("No se pudo abrir Ajustes de hotspot automáticamente. Ábrelo manual: Ajustes → Conexiones/Red → Hotspot.");
     }
 
     private void requestPermissionsAndSettings() {
